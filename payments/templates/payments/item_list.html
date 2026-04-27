@@ -1,0 +1,61 @@
+{% extends "payments/base.html" %}
+
+{% block title %}Меню кофейни · Bean & Bubble{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <div class="panel">
+        <div class="eyebrow">Bean & Bubble Coffee</div>
+        <h1>Мини-кофейня с оплатой через Stripe</h1>
+        <p class="muted">Бабл ти, раф, латте, матча и десерты. Можно купить один напиток сразу или собрать корзину и оплатить общий заказ.</p>
+        <div class="actions">
+            <a class="button" href="{% url 'payments:cart' %}">Открыть корзину</a>
+            <a class="button secondary" href="{% url 'payments:paid_orders' %}">Оплаченные заказы</a>
+        </div>
+    </div>
+    <div class="panel">
+        <div class="eyebrow">Для проверки задания</div>
+        <h2>Каталог, корзина и заказы</h2>
+        <p class="muted">После оплаты заказ попадает в оплаченные. Модели доступны в Django Admin, а Stripe Checkout создаётся на бэкенде.</p>
+        <div class="actions"><span class="pill">Кофе</span><span class="pill">Бабл ти</span><span class="pill">Корзина</span><span class="pill">Stripe</span></div>
+    </div>
+</section>
+
+<div class="grid">
+    {% for item in items %}
+        <article class="card">
+            <div class="product-art">{{ item.name|first }}</div>
+            <h3>{{ item.name }}</h3>
+            <p class="muted">{{ item.description|truncatechars:105 }}</p>
+            <p class="price">{{ item.price }} {{ item.currency|upper }}</p>
+            <div class="actions">
+                <a class="button secondary" href="{% url 'payments:item_detail' item.id %}">Подробнее</a>
+                <form method="post" action="{% url 'payments:add_to_cart' item.id %}">{% csrf_token %}
+                    <button class="button" type="submit">В корзину</button>
+                </form>
+            </div>
+        </article>
+    {% empty %}
+        <div class="card empty"><h2>Товаров пока нет</h2><p class="muted">Добавь их через админку или командой <code>python manage.py create_demo_data</code>.</p></div>
+    {% endfor %}
+</div>
+
+{% if paid_orders %}
+<section class="panel" style="margin-top:22px;">
+    <h2>Последние оплаченные заказы</h2>
+    <table>
+        <thead><tr><th>Заказ</th><th>Состав</th><th>Сумма</th><th>Статус</th></tr></thead>
+        <tbody>
+        {% for order in paid_orders %}
+            <tr>
+                <td><a href="{% url 'payments:order_detail' order.id %}">#{{ order.id }}</a></td>
+                <td>{% for line in order.lines.all %}{{ line.item.name }} × {{ line.quantity }}{% if not forloop.last %}, {% endif %}{% endfor %}</td>
+                <td>{{ order.total_price }} {{ order.currency|upper }}</td>
+                <td><span class="status paid">paid</span></td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</section>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,54 @@
+{% extends "payments/base.html" %}
+
+{% block title %}{{ item.name }} · Bean & Bubble{% endblock %}
+
+{% block head %}<script src="https://js.stripe.com/v3/"></script>{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <div class="panel">
+        <p><a href="{% url 'payments:item_list' %}">← Назад в каталог</a></p>
+        <div class="product-art">{{ item.name|first }}</div>
+    </div>
+    <div class="panel">
+        <div class="eyebrow">Товар</div>
+        <h1>{{ item.name }}</h1>
+        <p class="muted">{{ item.description|linebreaksbr }}</p>
+        <p class="price">{{ item.price }} {{ item.currency|upper }}</p>
+        <div class="actions">
+            <button class="button" id="buy-button">Купить сейчас</button>
+            <form method="post" action="{% url 'payments:add_to_cart' item.id %}">{% csrf_token %}
+                <button class="button secondary" type="submit">Добавить в корзину</button>
+            </form>
+        </div>
+        <div id="payment-message" class="error"></div>
+    </div>
+</section>
+
+<script>
+    const stripe = Stripe("{{ stripe_public_key|escapejs }}");
+    const buyButton = document.getElementById("buy-button");
+    const messageBlock = document.getElementById("payment-message");
+
+    buyButton.addEventListener("click", async function () {
+        buyButton.disabled = true;
+        messageBlock.textContent = "";
+        try {
+            const response = await fetch("{% url 'payments:buy_item' item.id %}", { method: "GET" });
+            const session = await response.json();
+            if (!response.ok) throw new Error(session.error || "Не получилось создать Checkout Session");
+            if (typeof stripe.redirectToCheckout === "function") {
+                const result = await stripe.redirectToCheckout({ sessionId: session.id });
+                if (result.error) throw new Error(result.error.message);
+            } else if (session.url) {
+                window.location.href = session.url;
+            } else {
+                throw new Error("Stripe не вернул ссылку для оплаты");
+            }
+        } catch (error) {
+            messageBlock.textContent = error.message;
+            buyButton.disabled = false;
+        }
+    });
+</script>
+{% endblock %}

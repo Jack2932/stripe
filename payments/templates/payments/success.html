@@ -1,0 +1,21 @@
+{% extends "payments/base.html" %}
+
+{% block title %}Оплата прошла · Bean & Bubble{% endblock %}
+
+{% block content %}
+<section class="panel empty">
+    <div class="eyebrow">Payment success</div>
+    <h1>Спасибо за оплату</h1>
+    {% if order and order.status == 'paid' %}
+        <p class="success">Заказ #{{ order.id }} отмечен как оплаченный.</p>
+        <p><a class="button" href="{% url 'payments:order_detail' order.id %}">Открыть заказ</a></p>
+    {% else %}
+        <p class="muted">Платёж вернулся со Stripe. Если статус ещё не обновился, webhook отметит заказ оплаченным через пару секунд.</p>
+    {% endif %}
+    {% if session_id %}<p class="muted">Session: <code>{{ session_id }}</code></p>{% endif %}
+    <div class="actions" style="justify-content:center;">
+        <a class="button secondary" href="{% url 'payments:paid_orders' %}">Оплаченные заказы</a>
+        <a class="button secondary" href="{% url 'payments:item_list' %}">В каталог</a>
+    </div>
+</section>
+{% endblock %}

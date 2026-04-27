@@ -1,0 +1,11 @@
+{% extends "payments/base.html" %}
+
+{% block title %}Оплата отменена · Bean & Bubble{% endblock %}
+
+{% block content %}
+<section class="panel empty">
+    <h1>Оплата отменена</h1>
+    <p class="muted">Заказ не был оплачен. Можно вернуться в корзину и попробовать ещё раз.</p>
+    <a class="button" href="{% url 'payments:cart' %}">Вернуться в корзину</a>
+</section>
+{% endblock %}

@@ -1,0 +1,79 @@
+{% extends "payments/base.html" %}
+
+{% block title %}Корзина · Bean & Bubble{% endblock %}
+
+{% block head %}<script src="https://js.stripe.com/v3/"></script>{% endblock %}
+
+{% block content %}
+<section class="panel">
+    <div class="eyebrow">Cart</div>
+    <h1>Корзина</h1>
+
+    {% if rows %}
+        {% if mixed_currency %}
+            <p class="error">В корзине товары в разных валютах. Для Stripe Checkout в этом примере оставь товары только одной валюты.</p>
+        {% endif %}
+        <table>
+            <thead><tr><th>Товар</th><th>Цена</th><th>Количество</th><th>Сумма</th></tr></thead>
+            <tbody>
+            {% for row in rows %}
+                <tr>
+                    <td><a href="{% url 'payments:item_detail' row.item.id %}">{{ row.item.name }}</a></td>
+                    <td>{{ row.item.price }} {{ row.item.currency|upper }}</td>
+                    <td>
+                        <form method="post" action="{% url 'payments:update_cart' row.item.id %}" class="actions">{% csrf_token %}
+                            <input type="number" min="0" max="99" name="quantity" value="{{ row.quantity }}">
+                            <button class="button secondary" type="submit">Обновить</button>
+                        </form>
+                    </td>
+                    <td>{{ row.line_total }} {{ row.item.currency|upper }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        <p class="price">Итого: {{ total }} {{ currency|upper }}</p>
+        <div class="actions">
+            <button class="button" id="checkout-button" {% if mixed_currency or not stripe_public_key %}disabled{% endif %}>Оплатить корзину</button>
+            <form method="post" action="{% url 'payments:clear_cart' %}">{% csrf_token %}
+                <button class="button danger" type="submit">Очистить</button>
+            </form>
+        </div>
+        <div id="payment-message" class="error"></div>
+    {% else %}
+        <div class="empty">
+            <h2>Корзина пустая</h2>
+            <p class="muted">Добавь товар из каталога и возвращайся сюда для оформления заказа.</p>
+            <a class="button" href="{% url 'payments:item_list' %}">В каталог</a>
+        </div>
+    {% endif %}
+</section>
+
+{% if rows and not mixed_currency and stripe_public_key %}
+<script>
+    const stripe = Stripe("{{ stripe_public_key|escapejs }}");
+    const checkoutButton = document.getElementById("checkout-button");
+    const messageBlock = document.getElementById("payment-message");
+
+    checkoutButton.addEventListener("click", async function () {
+        checkoutButton.disabled = true;
+        messageBlock.textContent = "";
+        try {
+            const response = await fetch("{% url 'payments:cart_buy' %}", { method: "GET" });
+            const session = await response.json();
+            if (!response.ok) throw new Error(session.error || "Не получилось создать заказ");
+            if (typeof stripe.redirectToCheckout === "function") {
+                const result = await stripe.redirectToCheckout({ sessionId: session.id });
+                if (result.error) throw new Error(result.error.message);
+            } else if (session.url) {
+                window.location.href = session.url;
+            } else {
+                throw new Error("Stripe не вернул ссылку для оплаты");
+            }
+        } catch (error) {
+            messageBlock.textContent = error.message;
+            checkoutButton.disabled = false;
+        }
+    });
+</script>
+{% endif %}
+{% endblock %}

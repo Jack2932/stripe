@@ -1,0 +1,67 @@
+{% extends "payments/base.html" %}
+
+{% block title %}Order #{{ order.id }} · Bean & Bubble{% endblock %}
+
+{% block head %}<script src="https://js.stripe.com/v3/"></script>{% endblock %}
+
+{% block content %}
+<section class="panel">
+    <p><a href="{% url 'payments:item_list' %}">← В каталог</a></p>
+    <div class="eyebrow">Order</div>
+    <h1>Заказ #{{ order.id }}</h1>
+    <p>Статус: <span class="status {% if order.status == 'paid' %}paid{% endif %}">{{ order.status }}</span></p>
+
+    <table>
+        <thead><tr><th>Товар</th><th>Кол-во</th><th>Сумма</th></tr></thead>
+        <tbody>
+        {% for line in order.lines.all %}
+            <tr>
+                <td>{{ line.item.name }}</td>
+                <td>{{ line.quantity }}</td>
+                <td>{{ line.line_total }} {{ line.item.currency|upper }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    {% if order.discount %}<p class="muted">Скидка: {{ order.discount.name }}</p>{% endif %}
+    {% if order.taxes.all %}<p class="muted">Налоги: {% for tax in order.taxes.all %}{{ tax.name }}{% if not forloop.last %}, {% endif %}{% endfor %}</p>{% endif %}
+
+    <p class="price">Итого: {{ order.total_price }} {{ order.currency|upper }}</p>
+    {% if order.status != 'paid' %}
+        <button class="button" id="buy-button">Оплатить заказ</button>
+        <div id="payment-message" class="error"></div>
+    {% else %}
+        <p class="success">Заказ оплачен{% if order.paid_at %}: {{ order.paid_at|date:"d.m.Y H:i" }}{% endif %}</p>
+    {% endif %}
+</section>
+
+{% if order.status != 'paid' %}
+<script>
+    const stripe = Stripe("{{ stripe_public_key|escapejs }}");
+    const buyButton = document.getElementById("buy-button");
+    const messageBlock = document.getElementById("payment-message");
+
+    buyButton.addEventListener("click", async function () {
+        buyButton.disabled = true;
+        messageBlock.textContent = "";
+        try {
+            const response = await fetch("{% url 'payments:buy_order' order.id %}", { method: "GET" });
+            const session = await response.json();
+            if (!response.ok) throw new Error(session.error || "Не получилось создать Checkout Session");
+            if (typeof stripe.redirectToCheckout === "function") {
+                const result = await stripe.redirectToCheckout({ sessionId: session.id });
+                if (result.error) throw new Error(result.error.message);
+            } else if (session.url) {
+                window.location.href = session.url;
+            } else {
+                throw new Error("Stripe не вернул ссылку для оплаты");
+            }
+        } catch (error) {
+            messageBlock.textContent = error.message;
+            buyButton.disabled = false;
+        }
+    });
+</script>
+{% endif %}
+{% endblock %}

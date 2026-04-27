@@ -1,0 +1,35 @@
+services:
+  - type: web
+    name: django-stripe-store
+    env: docker
+    plan: free
+    autoDeploy: true
+    envVars:
+      - key: DJANGO_DEBUG
+        value: "False"
+      - key: DJANGO_ALLOWED_HOSTS
+        sync: false
+      - key: DJANGO_CSRF_TRUSTED_ORIGINS
+        sync: false
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DJANGO_SUPERUSER_USERNAME
+        value: admin
+      - key: DJANGO_SUPERUSER_EMAIL
+        value: admin@example.com
+      - key: DJANGO_SUPERUSER_PASSWORD
+        sync: false
+      - key: STRIPE_PUBLIC_KEY
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_PUBLIC_KEY_USD
+        sync: false
+      - key: STRIPE_SECRET_KEY_USD
+        sync: false
+      - key: STRIPE_PUBLIC_KEY_EUR
+        sync: false
+      - key: STRIPE_SECRET_KEY_EUR
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
