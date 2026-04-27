@@ -75,7 +75,7 @@ python manage.py runserver
 ## Онлайн версия
 
 ```text
-https://your-project.onrender.com
+https://bean-bubble.onrender.com/
 ```
 
 ---
