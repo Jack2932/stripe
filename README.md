@@ -15,7 +15,7 @@
 ## Как запустить локально
 
 ```bash
-git clone https://github.com/your_username/bean-bubble-store.git
+git clone https://github.com/Jack2932/stripe
 cd bean-bubble-store
 ```
 
