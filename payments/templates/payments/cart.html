@@ -58,8 +58,20 @@
         checkoutButton.disabled = true;
         messageBlock.textContent = "";
         try {
-            const response = await fetch("{% url 'payments:cart_buy' %}", { method: "GET" });
-            const session = await response.json();
+            const response = await fetch("/cart/buy/", {
+    method: "GET",
+    headers: {
+        "Accept": "application/json"
+    }
+});
+            const text = await response.text();
+
+            let session;
+            try {
+                session = JSON.parse(text);
+            } catch {
+                throw new Error(text || "Сервер вернул не JSON");
+            }
             if (!response.ok) throw new Error(session.error || "Не получилось создать заказ");
             if (typeof stripe.redirectToCheckout === "function") {
                 const result = await stripe.redirectToCheckout({ sessionId: session.id });
